@@ -41,7 +41,7 @@ ifeq (1,${RELEASE})
 else
   CFLAGS  += ${DBGCFLAGS}
   CFLAGS  += -Wno-format
-  CFLAGS  += -Wswitch-enum
+#  CFLAGS  += -Wswitch-enum
   SP_OPTS  = "CFLAGS += ${DBGCFLAGS}"
   CL_OPTS += CL_DEBUG=ON
   CL_OPTS += SL_DEBUG=ON

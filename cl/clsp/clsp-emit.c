@@ -373,6 +373,7 @@ static inline void
 read_type_fnc(struct cl_type *clt, const struct symbol *raw_symbol,
               const struct symbol *type)
 {
+    (void) raw_symbol;
     /* return value */
     read_and_append_subtype(clt, type->ctype.base_type);
     /* arguments */
@@ -402,6 +403,7 @@ static inline void
 read_type_struct(struct cl_type *clt, const struct symbol *raw_symbol,
                  const struct symbol *type)
 {
+    (void) raw_symbol;
     clt->name = sparse_ident(type->ident, NULL);
     read_and_append_subtypes(clt, type->symbol_list);
 }
@@ -410,6 +412,7 @@ static inline void
 read_type_union(struct cl_type *clt, const struct symbol *raw_symbol,
                 const struct symbol *type)
 {
+    (void) raw_symbol;
     //CL_TRAP;
     clt->name     = sparse_ident(type->ident, NULL);
     //TODO:
@@ -422,6 +425,7 @@ static inline void
 read_type_enum(struct cl_type *clt, const struct symbol *raw_symbol,
                const struct symbol *type)
 {
+    (void) raw_symbol;
     clt->name = sparse_ident(type->ident, NULL);
 }
 
@@ -429,6 +433,7 @@ static struct cl_type *
 read_type(struct cl_type *clt, const struct symbol *raw_symbol,
           const struct symbol *type)
 {
+    (void) raw_symbol;
     typedef void (*type_converter)(struct cl_type *,
                                    const struct symbol * /*raw_symbol*/,
                                    const struct symbol * /*type*/);
@@ -575,7 +580,7 @@ static struct cl_type *
 type_from_symbol(struct symbol *raw_symbol, struct ptr_db_item **ptr)
 {
     struct cl_type *clt, **clt_ptr;
-    const struct symbol *type = type_unwrap(raw_symbol);
+    struct symbol *type = type_unwrap(raw_symbol);
 
     /* fastest path, we have the type already in hash table */
     clt = type_ptr_db_lookup_item(TYPEPTRDB, type, ptr);
@@ -1026,7 +1031,7 @@ static struct instruction *
 insn_setops_binop(struct cl_insn *cli, const struct instruction *insn);
 
 static unsigned
-op_dig_step(const struct cl_operand **op_composite, unsigned insn_offset);
+op_dig_step(struct cl_operand **op_composite, int insn_offset);
 
 static inline struct instruction *
 insn_setops_store(struct cl_insn *cli, const struct instruction *insn);
@@ -1192,7 +1197,6 @@ op_initialize_var_maybe(struct cl_operand *op, struct symbol *sym)
     assert(CL_OPERAND_VAR == op->code);
 
     struct expression *expr = sym->initializer;
-    struct cl_initializer **initial;
     struct cl_operand *from;
 
     struct cl_accessor *ac;
@@ -1584,7 +1588,7 @@ accessor_array_index(struct cl_accessor *ac, int index)
     @return @c UINT_MAX when operand could not be dug, or remaining offset
  */
 static unsigned
-op_dig_step(const struct cl_operand **op_composite, unsigned insn_offset)
+op_dig_step(struct cl_operand **op_composite, int insn_offset)
 {
     // `insn_offset' is consumed only by CL_TYPE_STRUCT or CL_TYPE_ARRAY;
     // e.g., accessing struct element is different with the first level
@@ -1593,7 +1597,7 @@ op_dig_step(const struct cl_operand **op_composite, unsigned insn_offset)
         i = 0;
 
     struct cl_accessor *ac;
-    const struct cl_operand *op = *op_composite;
+    struct cl_operand *op = *op_composite;
     struct cl_operand *clone = NULL;
 
     #define MAP_ACCESSOR(acc, clt, cl_ac) \
@@ -1675,7 +1679,7 @@ op_dig_step(const struct cl_operand **op_composite, unsigned insn_offset)
     another (on the whole, should not end without success).
  */
 static unsigned
-op_dig_for_type_match(const struct cl_operand **op_composite,
+op_dig_for_type_match(struct cl_operand **op_composite,
                       const struct cl_type *expected_type,
                       unsigned initial_offset)
 {
@@ -1710,8 +1714,7 @@ op_dig_for_type_match(const struct cl_operand **op_composite,
                 ac->data.item.id = i;
                 op_clone->type = (struct cl_type *) ac->type->items[i].type;
 
-                res = op_dig_for_type_match((const struct cl_operand **)
-                                            &op_clone, expected_type, offset);
+                res = op_dig_for_type_match(&op_clone, expected_type, offset);
 
                 if (UINT_MAX != res)
                     /* successfull case of digging */
@@ -1761,9 +1764,9 @@ emit_bb_open(const char *label)
 /**
     Adjust LOAD source operand
  */
-static const struct cl_operand *
-insn_assignment_load_from(const struct cl_operand *const op_rhs, pseudo_t rhs,
-                          const struct cl_type *expected_type, int offset)
+static struct cl_operand *
+insn_assignment_load_from(struct cl_operand *const op_rhs, pseudo_t rhs,
+                          struct cl_type *expected_type, int offset)
 {
     struct cl_operand *backup, *ret = op_rhs;
     struct cl_accessor *ac;
@@ -1789,7 +1792,7 @@ insn_assignment_load_from(const struct cl_operand *const op_rhs, pseudo_t rhs,
                     ret->type = expected_type;
                 } else {
                     ac->type = ret->type;
-                    ret->type = ret->type->items->type;
+                    ret->type = (struct cl_type *) ret->type->items->type;
                 }
             }
 
@@ -1801,8 +1804,7 @@ insn_assignment_load_from(const struct cl_operand *const op_rhs, pseudo_t rhs,
         }
 
         backup = ret;
-        if (op_dig_for_type_match((const struct cl_operand **) &ret,
-                                  expected_type, offset)) {
+        if (op_dig_for_type_match(&ret, expected_type, offset)) {
             /* throw all effort so far, combine backup and CL_ACCESSOR_OFFSET */
             ret = backup;
 
@@ -1826,9 +1828,9 @@ insn_assignment_load_from(const struct cl_operand *const op_rhs, pseudo_t rhs,
     dereference or, together with non-matching symbol-like pseudo,
     dig into into composite type to find the match.
  */
-static const struct cl_operand *
-insn_assignment_store_to(const struct cl_operand *const op_lhs, pseudo_t lhs,
-                         const struct cl_type *expected_type, unsigned offset,
+static struct cl_operand *
+insn_assignment_store_to(struct cl_operand *const op_lhs, pseudo_t lhs,
+                         struct cl_type *expected_type, unsigned offset,
                          const struct cl_insn *cli)
 {
     struct cl_operand *ret = op_lhs;
@@ -1871,12 +1873,11 @@ insn_assignment_store_to(const struct cl_operand *const op_lhs, pseudo_t lhs,
                 ret->type = expected_type;
             } else {
                 ac->type = ret->type;
-                ret->type = ret->type->items->type;
+                ret->type = (struct cl_type *) ret->type->items->type;
             }
         }
 
-        offset = op_dig_for_type_match((const struct cl_operand **) &ret,
-                                       expected_type, offset);
+        offset = op_dig_for_type_match(&ret, expected_type, offset);
         assert(0 == offset);
     }
 
@@ -1965,7 +1966,7 @@ insn_assignment_base(struct cl_insn *cli, const struct instruction *insn,
     if (lhs->type != PSEUDO_SYM || rhs->type != PSEUDO_ARG
       || (*op_lhs)->data.var->uid != (*op_rhs)->data.var->uid)
 #endif
-        return cli;
+        return;
 #if FIX_SPARSE_EXTRA_ARG_TO_MEM
     WARN("instruction omitted: " HIGHLIGHT(_1(s)), show_instruction(insn));
     cli->code = CL_INSN_NOP;  /* nothing to emit */
@@ -2081,9 +2082,8 @@ insn_setops_setval(struct cl_insn *cli, const struct instruction *insn)
 static struct instruction *
 insn_setops_binop(struct cl_insn *cli, const struct instruction *insn)
 {
-    const struct cl_type *t1, *t2;
+    struct cl_type *t1, *t2;
     struct cl_operand *src1, *src2, *dst, *src1_u, *src2_u;
-    struct cl_instruction *next;
 
     BINOP(cli)->dst  = dst  = op_from_pseudo(insn, insn->target);
     BINOP(cli)->src1 = src1 = op_from_pseudo_ref(insn, insn->src1);
@@ -2147,7 +2147,7 @@ insn_setops_binop(struct cl_insn *cli, const struct instruction *insn)
 
             ac = op_append_accessor(dst, NULL);
             ac->code = CL_ACCESSOR_REF;
-            ac->type = dst->type->items->type;
+            ac->type = (struct cl_type *) dst->type->items->type;
 
             dst->type = t1;
 
@@ -2196,7 +2196,7 @@ insn_setops_binop(struct cl_insn *cli, const struct instruction *insn)
                 next->opcode = OP_ADD;
 
                 *modified_src2 = *insn->src2;  /* int pseudo shallow copy */
-                modified_src2->priv = UNOP(cli)->dst;
+                modified_src2->priv = (void *) UNOP(cli)->dst;
 
                 next->src2 = modified_src2;
                 return next; /* proceed the modified copy in next the round */
@@ -2357,7 +2357,7 @@ insn_emit_call(struct cl_insn *cli, const struct instruction *insn)
 
             /* adjust type if we know it (not for varargs) */
             if (fnc->type->item_cnt > cnt) {
-                clt = fnc->type->items[cnt].type;
+                clt = (struct cl_type *) fnc->type->items[cnt].type;
                 if (!type_match(op_arg->type, clt)) {
                     op_arg = op_copy(op_arg, copy_shallow);
                     op_arg->type = clt;
@@ -2789,6 +2789,7 @@ static int
 consider_file(const char *file, struct symbol_list *symlist, int emit_props,
               int stream_nr)
 {
+    (void) stream_nr;
     bool is_private;
     struct symbol *sym;
     struct entrypoint *ep;

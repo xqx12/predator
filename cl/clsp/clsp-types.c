@@ -251,7 +251,7 @@ build_referenced_type(struct cl_type *orig_clt)
 
 struct cl_type *
 type_ptr_db_insert(struct type_ptr_db *db, struct cl_type *clt,
-                   const struct symbol *type, struct ptr_db_item **ptr)
+                   struct symbol *type, struct ptr_db_item **ptr)
 #define PTRDBARR_SIZE  (128)
 {
     WITH_DEBUG_LEVEL(d_tins) {
@@ -284,7 +284,10 @@ type_ptr_db_insert(struct type_ptr_db *db, struct cl_type *clt,
         if (!(ptr_db->alloc_size - ptr_db->last)) {
             ptr_db->alloc_size += PTRDBARR_SIZE;
             // guaranteed to continue only in case of success
-            MEM_ARR_RESIZE(ptr_db->heads, ptr_db->alloc_size);
+            if (!MEM_ARR_RESIZE(ptr_db->heads, ptr_db->alloc_size))
+            {
+                /* just to suppress warning: value computed is not used */
+            }
         }
         empty_ptr_db_item(&ptr_db->heads[ptr_db->last], clt);
 
@@ -307,7 +310,7 @@ populate_with_base_types(struct type_ptr_db *db)
 {
     struct symbol *type;
     struct cl_type *clt;
-    int i;
+    unsigned i;
     for (i = 0; i < ARRAY_SIZE(base_types); i++) {
         clt = base_types[i].ref;
         empty_type(clt);
@@ -363,7 +366,7 @@ type_ptr_db_destroy(struct type_ptr_db* db)
     // destroy pointer hierarchy
     struct ptr_db_arr *ptr_db = &db->ptr_db;
     struct ptr_db_item *item, *item_next;
-    int i;
+    unsigned i;
     for (i = 0; i < ptr_db->last; i++) {
         item = &ptr_db->heads[i];
 

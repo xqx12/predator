@@ -123,7 +123,7 @@ extern struct cl_type *build_referenced_type(struct cl_type *orig_clt);
 
 extern struct cl_type *type_ptr_db_insert(struct type_ptr_db *db,
                                           struct cl_type *clt,
-                                          const struct symbol *type,
+                                          struct symbol *type,
                                           struct ptr_db_item **ptr);
 
 extern struct cl_type *type_ptr_db_lookup_item(struct type_ptr_db *db,
