@@ -79,7 +79,7 @@ LDFLAGS         += $(call GETLDFLAGS,${SPARSE_LIB})
 
 # Code Listener + analyzers
 
-PREDATOR_DIR     = dep-predator
+PREDATOR_DIR     = ../..
 INCLUDE_DIRS    += ${PREDATOR_DIR}/include/cl ${PREDATOR_DIR}/cl
 CL_OPTS         += GCC_HOST='$(shell PATH=/usr/bin:$PATH which gcc)'
 CL_OPTS         := $(foreach cl_opt,${CL_OPTS},-D ${cl_opt})

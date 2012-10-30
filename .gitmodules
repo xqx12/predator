@@ -1,0 +1,3 @@
+[submodule "cl/clsp/dep-sparse"]
+	path = cl/clsp/dep-sparse
+	url = https://jpokorny@github.com/jpokorny/sparse.git
