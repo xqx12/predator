@@ -20,7 +20,12 @@ do_sync() {
         c="$(printf %s "$i" | sed 's|\.c$||')"
         raw="${i}-predator.err"
         err="${c}.err$2"
-        grep '\[-fplugin=libsl\.so\]$' "$raw" \
+        if test xyes = "x$USE_CLSP"; then
+            cmd="cat"
+        else
+            cmd="grep '\[-fplugin=libsl\.so\]$'"
+        fi
+        eval "$cmd" "$raw" \
             | grep -v 'note: .*\[internal location\]' \
             | sed 's| \[-fplugin=libsl\.so\]$||' \
             | sed 's|^[^:]*/||' \
@@ -31,6 +36,12 @@ do_sync() {
     done
     printf "\n\n" >&2
 }
+
+if test xyes = "x$USE_CLSP"; then
+    printf "\n${G}CLSP front-end...${N}\n" >&2
+    do_sync "$*" .clsp
+    unset USE_CLSP
+fi
 
 printf "\n${G}Basic analysis...${N}\n" >&2
 unset PFLAGS

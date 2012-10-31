@@ -57,6 +57,17 @@ find_gcc_plug sl Predator
 $TIMEOUT "$GCC_HOST" --version >&2 \
     || die "unable to run gcc: $TIMEOUT $GCC_HOST --version"
 
+if test xyes = "x$USE_CLSP"; then
+    # try to run CLSP
+    export CLSP="$topdir/sl_build/clsp-predator"
+    printf "CLSP: "
+    "$CLSP" --version || die "unable to run CLSP: $CLSP"
+    printf "\n"
+
+    # all warnings are ours warnings as long as we have a separate fd
+    MSG_OUR_WARNINGS=".*"
+fi
+
 wait_for_pid() {
     while test -d /proc/$1; do
         sleep .0625
@@ -190,22 +201,33 @@ try_one() {
         fi
 
         # turn on the plug-in
-        CMD="$CMD -fplugin=$GCC_PLUG -fplugin-arg-libsl-args=$PFLAGS"
+        if test xyes = "x$USE_CLSP"; then
+            CMD="$TIMEOUT $CLSP $CFLAGS $SRC"
+            CMD="$CMD --fd-cl=1 --fd-sp=3 --fd-warn=3 3>$BARE_GCC_OUT"
+        else
+            CMD="$CMD -fplugin=$GCC_PLUG -fplugin-arg-libsl-args=$PFLAGS"
 
-        # run in background so that we can kill it easily
-        CMD="$CMD -fplugin-arg-libsl-pid-file=$GCC_PID_FILE &"
+            # run GCC in background so that we can kill it easily
+            CMD="$CMD -fplugin-arg-libsl-pid-file=$GCC_PID_FILE &"
+        fi
 
         # run the job now!
         eval "$CMD" > "$PREDATOR_OUT" 2>&1
+        STATUS="$?"
 
-        # wait for the subshell
-        wait $!
-        STATUS=$?
+        if test xyes = "x$USE_CLSP"; then
+            # do not treat errors reported by sparse as errors
+            test 2 -eq "$STATUS" && STATUS=0
+        else
+            # wait for the subshell
+            wait $!
+            STATUS=$?
 
-        if test -r "$GCC_PID_FILE"; then
-            # wait for the compiler
-            GCC_PID="$(<"$GCC_PID_FILE")"
-            wait_for_pid "$GCC_PID"
+            if test -r "$GCC_PID_FILE"; then
+                # wait for the compiler
+                GCC_PID="$(<"$GCC_PID_FILE")"
+                wait_for_pid "$GCC_PID"
+            fi
         fi
 
         handle_output "$PREDATOR_OUT" "$STATUS"
