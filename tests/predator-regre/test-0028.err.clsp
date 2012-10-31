@@ -1,0 +1,2 @@
+test-0028.c:25:24: error: dereferencing object of size 8B out of bounds
+test-0028.c:25:24: note: the target object ends 4B beyond a heap object of size 4B

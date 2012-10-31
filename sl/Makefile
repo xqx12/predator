@@ -33,6 +33,12 @@ all: version.h ../cl_build/Makefile
 fast:
 	$(MAKE) -sC ../sl_build
 
+clsp: ../cl/clsp/clsp
+	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
+
+../cl/clsp/clsp:
+	$(MAKE) -C ../cl/clsp
+
 check: all
 	cd ../sl_build && $(CTEST) --output-on-failure
 
@@ -59,6 +65,7 @@ distclean: clean
 
 distcheck: distclean
 	$(MAKE) -C ../cl CMAKE='cmake -D CL_DEBUG=ON'
+	$(MAKE) clsp
 	$(MAKE) check CMAKE='cmake -D TEST_ONLY_FAST=OFF -D SL_DEBUG=ON'
 	$(MAKE) -C ../cl CMAKE='cmake -D CL_DEBUG=OFF'
 	$(MAKE) all CMAKE='cmake -D TEST_ONLY_FAST=ON -D SL_DEBUG=OFF'

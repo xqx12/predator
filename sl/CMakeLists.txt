@@ -88,7 +88,7 @@ configure_file(${PROJECT_SOURCE_DIR}/check-property.sh.in
 # make install
 install(TARGETS sl DESTINATION lib)
 
-option(TEST_ONLY_FAST "Set to OFF to boost test coverage" ON)
+set(CLSP "${sl_BINARY_DIR}/clsp-predator")
 
 set(GCC_EXEC_PREFIX "" CACHE STRING
     "Set to \"timeout N\" to limit each test to run at most N seconds.")
@@ -153,6 +153,7 @@ set(tests ${tests}
     0830 0831 0832 0833 0834)
 endif()
 
+option(TEST_ONLY_FAST "Set to OFF to boost test coverage" ON)
 if(TEST_ONLY_FAST)
 else()
 # expensive tests
@@ -162,6 +163,37 @@ set(tests ${tests}
     0405 0407 0409 0410 0412 0413 0414 0415 0416 0417 0418
     0469 0471 0474)
 endif()
+
+# CLSP tests
+set(clsp_tests
+         0001 0002 0003 0004 0005 0006 0007 0008 0009
+    0010 0011 0012 0013 0014 0015 0016 0017 0018 0019
+    0020      0022 0023 0024 0025 0026 0027 0028 0029
+    0030 0031 0032 0033 0034 0035 0036 0037 0038 0039
+    0040 0041 0042 0043 0044 0045 0046
+                                            0058 0059
+         0061
+                   0073 0074 0075 0076 0077 0078 0079
+         0081 0082 0083 0084      0086 0087 0088 0089
+         0091 0092 0093      0095
+                             0105
+              0112      0114                0118 0119
+    0120 0121 0122           0125 0126
+         0131 0132                               0139
+    0140 0141 0142 0143 0144 0145 0146 0147 0148
+              0152 0153 0154 0155 0156           0159
+         0161 0162 0163 0164
+         0171 0172 0173 0174 0175 0176      0178 0179
+    0180 0181 0182           0185      0187      0189
+    0190 0191 0192 0193 0194 0195 0196      0198 0199
+    0200           0203 0204                0208
+                             0215
+         0221      0223 0224 0225 0226 0227 0228 0229
+    0230 0231 0232 0233                     0238
+                                  0316
+    0500 0501 0502 0503 0504 0505           0508 0509
+    0510 0511 0512           0515 0516 0517 0518
+    0520)
 
 set(cost 1)
 
@@ -220,6 +252,35 @@ macro(test_predator_regre name_suff ext arg1)
     endforeach()
 endmacro(test_predator_regre)
 
+# FIXME: copy/pasted from above!
+macro(test_predator_regre_clsp)
+    foreach (num ${clsp_tests})
+        set(cmd "LC_ALL=C ${GCC_EXEC_PREFIX} ${CLSP}")
+
+        # we use the following flag to avoid differences on 32bit vs 64bit archs
+        # in the error output, which is checked for exact match
+        set(cmd "${cmd} -m32")
+
+        set(cmd "${cmd} ${testdir}/test-${num}.c")
+        set(cmd "${cmd} -I../include/predator-builtins -DPREDATOR")
+        set(cmd "${cmd} --fd-cl=1 --fd-sp=3 --fd-warn=3 3>/dev/null")
+
+        # filter out NOTE messages with internal location
+        set(cmd "${cmd} | (grep -v 'note: .*\\\\[internal location\\\\]'; true)")
+
+        # drop absolute paths
+        set(cmd "${cmd} | sed 's|^[^:]*/||'")
+
+        # ... and finally diff with the expected output
+        set(cmd "${cmd} | diff -up ${testdir}/test-${num}.err.clsp -")
+        set(test_name "test-${num}.c-CLSP")
+        add_test(${test_name} bash -o pipefail -c "${cmd}")
+
+        SET_TESTS_PROPERTIES(${test_name} PROPERTIES COST ${cost})
+        MATH(EXPR cost "${cost} + 1")
+    endforeach()
+endmacro(test_predator_regre_clsp)
+
 # default mode
 test_predator_regre("" "" "-fplugin-arg-libsl-args=error_label:ERROR")
 
@@ -229,6 +290,11 @@ test_predator_regre("-TRACK_UNINIT" ".uninit"
 
 # OOM simulation mode
 test_predator_regre("-OOM" ".oom" "-fplugin-arg-libsl-args=oom")
+
+if(ENABLE_CLSP)
+    # CLSP regression tests
+    test_predator_regre_clsp()
+endif()
 
 if(TEST_WITH_VALGRIND)
     message (STATUS "valgrind enabled for testing...")
