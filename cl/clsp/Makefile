@@ -111,16 +111,18 @@ TEST_PROGRAMS   += test_swapfd
 TEST_RUNNER_DIR  = tests
 COMPLETION       = completion/${PROGRAM}
 
-ifeq (,${ANALYZER})
-  req = ${ANALYZERS}
-endif
+all : ${PROGRAM} ${ANALYZER}
 
-all : ${PROGRAM} ${req}
+${SPARSE_DIR}/Makefile : ../../.gitmodules
+	cd ../.. && git submodule update --init cl/clsp/${SPARSE_DIR}
 
-${SPARSE_LIB}:
+${SPARSE_LIB} : ${SPARSE_DIR}/Makefile
 	$(if {$SP_OPTS},$(shell echo "${SP_OPTS}" > ${SPARSE_DIR}/local.mk))
 	$(MAKE) -C ${SPARSE_DIR} $(@F)
 	$(RM) ${SPARSE_DIR}/local.mk
+
+# worthless to build object files if there is no SPARSE_LIB to link them with
+${OBJECTS} : ${SPARSE_LIB}
 
 define ANALYZER_template =
   # following patsubst does: cl_smoke_test -> cl
@@ -168,7 +170,6 @@ clean-sparse:
 
 clean-analyzers:
 	for a in $(ANALYZER_CLEAN); do $(MAKE) -C $$a clean; done
-	#rm -rf -- ${PREDATOR_DIR}/cl_build
 
 clean-check:
 	make -C ${TEST_RUNNER_DIR} clean
