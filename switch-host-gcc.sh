@@ -1,6 +1,8 @@
 #!/bin/bash
 export SELF="$0"
 export LC_ALL=C
+export CC=gcc
+export CXX=g++
 MAKE="make -j5"
 
 die() {
@@ -63,7 +65,7 @@ $MAKE -C cl check \
 
 build_analyzer() {
     status_update "Trying to build $2"
-    $MAKE -C $1 CMAKE="cmake -D GCC_HOST='$GCC_HOST'" \
+    $MAKE -C $1 CMAKE="cmake -D GCC_HOST='$GCC_HOST' -D GCC_EXEC_PREFIX=" \
         || return $?
 
     status_update "Checking whether $2 works"

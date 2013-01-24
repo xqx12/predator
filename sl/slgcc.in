@@ -23,7 +23,7 @@ seek_input_file "$@" || usage
 
 # include common code base
 # FIXME: 'readlink -f' does not work on Darwin
-topdir="`dirname "$(readlink -f "$SELF")"`/.."
+topdir="`dirname "$(python -c "import os; print os.path.abspath('$SELF')")"`/.."
 source "$topdir/build-aux/xgcclib.sh"
 
 # basic setup
@@ -82,7 +82,7 @@ run_gcc() {
     "$GCC_HOST" $GCC_OPTS                                           \
         -fplugin="$GCC_PLUG" -fplugin-arg-libsl-pid-file="$pidfile" \
         -fplugin-arg-libsl-args=error_label:ERROR $SL_OPTS "$@"     \
-        3>&1 1>&2 2>&3 | stdbuf --output=L grep -E                  \
+        3>&1 1>&2 2>&3 | grep -E                  \
         ' \[-fplugin=libsl\.so\]$|CL_BREAK_IF|INT3|SIGTRAP|internal compiler error|undefined symbol'
     if [ $? -ne 0 ]; then
         printf "\033[1;31mFAILED\033[0m\n" >&2
@@ -99,36 +99,7 @@ forward_signal() {
 # colorize the output
 # FIXME: 'stdbuf' is not available on Darwin
 # FIXME: 'sed -r' does not work on Darwin
-run_gcc "$@" | stdbuf --output=L sed -re 's| \[-fplugin=libsl\.so\]$||'        \
-        -e "s|^/.*/predator[^/]*/||"                                           \
-        -e "s|(^.*) \[internal location\]\$|$S\1$N|"                           \
-        -e "s|(: error:) (.*)\$|\1 $R\2$N|"                                    \
-        -e "s|(: warning:) (.*)\$|\1 $Y\2$N|"                                  \
-        -e "s|(: note:) (.*)\$|\1 $G\2$N|"                                     \
-        -e "s|(current memory usage: *) ([0-9.]+ MB)|\1 $B\2$N|"               \
-        -e "s|(peak memory usage: *) ([0-9.]+ MB)|\1 $R\2$N|"                  \
-        -e "s|(!!! executing insn #[0-9]+ ...) (.*)\$|\1 $G\2$N|"              \
-        -e "s|(variable[:]? #[0-9]+:)([a-zA-Z0-9_.]+)|\1$G\2$N|"               \
-        -e "s|(per target) (L[0-9]+)|\1 $G\2$N|"                               \
-        -e "s|(initial size of state was) ([0-9]+)|\1 $W\2$N|"                 \
-        -e "s|(#[0-9]+)|$W\1$N|"                                               \
-        -e "s|(block L[0-9]+) (in progress)|\1 $Y\2$G|"                        \
-        -e "s|(... while executing) (.*\\(\\))|\1 $Y\2$N|"                     \
-        -e "s|took ([0-9.]+ s)|took $R\1$N|"                                   \
-        -e "s|(ignoring call of undefined function:) (.*)\$|\1 $R\2$N|"        \
-        -e "s|(internal compiler error:) (.*)\$|\1 $R\2$N|"                    \
-        -e "s|(undefined symbol:) (.*)\$|\1 $R\2$N|"                           \
-        -e "s/(CL_BREAK_IF|INT3|SIGTRAP)/$R\1$N/"                              \
-        -e "s/(importGlVar\\(\\))/$R\1$N/"                                     \
-        -e "s/(: debug: *) ([<>!]J[<>!]|AAA)/\1 $R\2$N/"                       \
-        -e "s/(: debug: SymHeap::)(objSetConcrete)/\1$Y\2$N/"                  \
-        -e "s/(: debug:) \\(x\\) (.*)\$/\1 $Y(x)$N \2/"                        \
-        -e "s/(: debug:) (spliceOutListSegment)/\1 $B\2$N/"                    \
-        -e "s/(: debug:) (spliceOutAbstractPathCore)/\1 $B\2$N/"               \
-        -e "s/(: debug:) (<<<|>>>)/\1 $B\2$N/"                                 \
-        -e "s/(: debug:) (XXX)/\1 $Y\2$N/"                                     \
-        -e "s/(: debug: ___) (entering|we are)/\1 $G___$N \2/"                 \
-        &
+run_gcc "$@" &
 
 # redirect terminating signals to our plug-in
 trap "forward_signal SIGTERM" SIGTERM
