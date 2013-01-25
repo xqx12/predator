@@ -120,7 +120,8 @@ inline bool operator<(const SchedItem &a, const SchedItem &b)
 typedef std::pair<FldHandle /* dst */, FldHandle /* gt */>      TCloneItem;
 typedef WorkList<TCloneItem>                                    TCloneWorkList;
 
-typedef WorkList<SchedItem>                                     TWorkList;
+typedef std::queue<SchedItem>                                   TSched;
+typedef WorkList<SchedItem,TSched>                              TWorkList;
 
 typedef TObjMap                                                 TObjMapBidir[2];
 
