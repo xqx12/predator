@@ -121,7 +121,7 @@
  * - 2 ... also when joining states if the three-way join is considered useful
  * - 3 ... do not restrict the usage of three-way join at the level of symjoin
  */
-#define SE_ALLOW_THREE_WAY_JOIN             2
+#define SE_ALLOW_THREE_WAY_JOIN             1
 
 /**
  * if 1, assume that the contents of static data is initialized on first access
@@ -246,7 +246,7 @@
 /**
  * upper bound of SLS minimal length (zero means unlimited)
  */
-#define SE_RESTRICT_SLS_MINLEN              2
+#define SE_RESTRICT_SLS_MINLEN              1
 
 /**
  * - 0 ... do not try to optimize the order of heaps in SymState containers
