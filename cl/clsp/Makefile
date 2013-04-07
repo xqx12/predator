@@ -42,14 +42,14 @@ endif
 ifeq (1,${VERBOSE})
   SP_OPTS  = "V = 1"
 endif
-ifneq (,${ANALYZER})
-  CFLAGS  += -DHAS_CL
-endif
 ifeq (1,${USE_LTO})
     LTOFLAGS = -flto
     CFLAGS += ${LTOFLAGS}
     LDFLAGS += -fuse-linker-plugin ${LTOFLAGS}
 endif
+
+# needed for static linkage (disables support for -ldl)
+CFLAGS  += -DHAS_CL
 
 # this test and dependency usage borrowed from sparse's Makefile
 HAVE_GCC_DEP:=$(shell touch .gcc-test.c                                   \
@@ -82,6 +82,7 @@ CFLAGS          += $(foreach dir,${INCLUDE_DIRS},-isystem ${dir})
 # local code
 
 PROGRAM  = clsp
+CLSP_LIB  = libclsp.a
 OBJECTS  = clsp.o    \
   clsp-ret.o         \
   clsp-color.o       \
@@ -102,7 +103,7 @@ TEST_PROGRAMS   += test_swapfd
 TEST_RUNNER_DIR  = tests
 COMPLETION       = completion/${PROGRAM}
 
-all : ${PROGRAM}
+all : ${CLSP_LIB}
 
 ${SPARSE_DIR}/Makefile : ../../.gitmodules
 	cd ../.. && git submodule update --init cl/clsp/${SPARSE_DIR}
@@ -120,6 +121,10 @@ $(if ${DEP_FILES},$(eval include ${DEP_FILES}))
 ${OBJECTS} : %.o : %.c
 	$(CC) $(CFLAGS) $(OBJECTS_CFLAGS) -o $@ -c $<
 
+${CLSP_LIB} :: ${OBJECTS} ${SPARSE_LIB}
+	ar rcs $@ ${OBJECTS}
+	ranlib $@
+
 ${PROGRAM} :: ${OBJECTS} ${SPARSE_LIB}
 	g++ $(CFLAGS) -o $@ ${OBJECTS} $(LDFLAGS)
 
@@ -135,7 +140,7 @@ check :: $(PROGRAM)
 	make -C ${TEST_RUNNER_DIR}
 
 clean : clean-check
-	$(RM) -f -- $(OBJECTS) ${TEST_PROGRAMS} ${DEP_FILES} core vgcore.*
+	$(RM) -f -- $(OBJECTS) ${TEST_PROGRAMS} ${DEP_FILES} core vgcore.* $(PROGRAM) $(CLSP_LIB)
 
 clean-sparse:
 	$(MAKE) -C $(SPARSE_DIR) clean

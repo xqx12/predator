@@ -149,11 +149,13 @@ atexit_cl(void)
         API_CL(global_cleanup);
     }
 
+#ifndef HAS_CL
     /* close the access to dynamic libraries */
     for (size_t i=0; i < GLOBALS(cl_libs.cnt); i++)
         if (GLOBALS(cl_libs.handles)[i]
           && 0 != dlclose(GLOBALS(cl_libs.handles)[i]))
             PUT(err, "dlclose: "_1(s), dlerror());
+#endif
 }
 
 

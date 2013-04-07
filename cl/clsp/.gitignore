@@ -3,6 +3,7 @@
 *.o
 *.swp
 /clsp
+/libclsp.a
 /test_swapfd
 
 # override
