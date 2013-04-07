@@ -156,3 +156,26 @@ macro(CL_BUILD_GCC_PLUGIN PLUGIN ANALYZER LIBCL_PATH)
     CL_LINK_GCC_PLUGIN(${PLUGIN} ${LIBCL_PATH})
     target_link_libraries(${PLUGIN} ${ANALYZER})
 endmacro()
+
+# build executable CLSP_EXEC from static lib ANALYZER using CL from LIBCL_PATH
+macro(CL_BUILD_CLSP_EXECUTABLE CLSP_EXEC ANALYZER LIBCL_PATH)
+    # build CLSP executable named ${CLSP_EXEC}
+    add_executable(${CLSP_EXEC} ${EMPTY_C_FILE})
+
+    # find front-end static libraries
+    find_library(CL_LIB     cl     PATHS ${LIBCL_PATH}                       NO_DEFAULT_PATH)
+    find_library(CLSP_LIB   clsp   PATHS ${LIBCL_PATH}/../cl/clsp            NO_DEFAULT_PATH)
+    find_library(SPARSE_LIB sparse PATHS ${LIBCL_PATH}/../cl/clsp/dep-sparse NO_DEFAULT_PATH)
+
+    # link all static libraries together
+    target_link_libraries(${CLSP_EXEC} ${CLSP_LIB} ${CL_LIB} ${SPARSE_LIB} ${ANALYZER})
+endmacro()
+
+option(ENABLE_CLSP "Set to ON to build the CLSP front-end" OFF)
+
+macro(CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED CLSP_EXEC ANALYZER LIBCL_PATH)
+    if(ENABLE_CLSP)
+        # build CLSP executable
+        CL_BUILD_CLSP_EXECUTABLE(${CLSP_EXEC} ${ANALYZER} ${LIBCL_PATH})
+    endif()
+endmacro()

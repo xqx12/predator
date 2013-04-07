@@ -66,6 +66,9 @@ add_library(predator STATIC
 # build GCC plug-in (libsl.so)
 CL_BUILD_GCC_PLUGIN(sl predator ../cl_build)
 
+# optionally build CLSP executable (clsp-predator)
+CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED(clsp-predator predator ../cl_build)
+
 # get the full path of libsl.so
 get_property(GCC_PLUG TARGET sl PROPERTY LOCATION)
 message (STATUS "GCC_PLUG: ${GCC_PLUG}")
