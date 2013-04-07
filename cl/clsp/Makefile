@@ -29,11 +29,6 @@ RELEASE    = 0
 USE_LTO    = 0
 VERBOSE    = 0  # show build commands, also propagated also to predator et al.
 
-ANALYZERS  = cl_smoke_test fwnull sl fa
-# one from above or <empty>
-ANALYZER   = 
-CL_OPTS   :=
-
 ifeq (1,${RELEASE})
   CFLAGS  += -O2 -march=native -mtune=native
   CFLAGS  += -Wno-format  # or -DC99STRICT, both to suppress "%n$" warnings
@@ -43,8 +38,6 @@ else
   CFLAGS  += -Wno-format
 #  CFLAGS  += -Wswitch-enum
   SP_OPTS  = "CFLAGS += ${DBGCFLAGS}"
-  CL_OPTS += CL_DEBUG=ON
-  CL_OPTS += SL_DEBUG=ON
 endif
 ifeq (1,${VERBOSE})
   SP_OPTS  = "V = 1"
@@ -77,12 +70,10 @@ SPARSE_LIB_NAME  = sparse
 SPARSE_LIB      := ${SPARSE_DIR}/lib${SPARSE_LIB_NAME}.a
 LDFLAGS         += $(call GETLDFLAGS,${SPARSE_LIB})
 
-# Code Listener + analyzers
+# Code Listener
 
 PREDATOR_DIR     = ../..
 INCLUDE_DIRS    += ${PREDATOR_DIR}/include/cl ${PREDATOR_DIR}/cl
-CL_OPTS         += GCC_HOST='$(shell PATH=/usr/bin:$PATH which gcc)'
-CL_OPTS         := $(foreach cl_opt,${CL_OPTS},-D ${cl_opt})
 
 # do not warn about C99 and similar issues in included headers
 CFLAGS          += $(foreach dir,${INCLUDE_DIRS},-isystem ${dir})
@@ -111,7 +102,7 @@ TEST_PROGRAMS   += test_swapfd
 TEST_RUNNER_DIR  = tests
 COMPLETION       = completion/${PROGRAM}
 
-all : ${PROGRAM} ${ANALYZER}
+all : ${PROGRAM}
 
 ${SPARSE_DIR}/Makefile : ../../.gitmodules
 	cd ../.. && git submodule update --init cl/clsp/${SPARSE_DIR}
@@ -124,29 +115,12 @@ ${SPARSE_LIB} : ${SPARSE_DIR}/Makefile
 # worthless to build object files if there is no SPARSE_LIB to link them with
 ${OBJECTS} : ${SPARSE_LIB}
 
-define ANALYZER_template =
-  # following patsubst does: cl_smoke_test -> cl
-  $(1)_dir :=  $$(patsubst %_smoke_test,%,$${PREDATOR_DIR}/$(1))
-  $(1)_path := $${$(1)_dir}_build/$$(subst test,tests/,$$(findstring test,$(1)))lib$(1).so
-  $(1) :: $${$(1)_path}
-  $${$(1)_path}:
-	$$(MAKE) -C $${$(1)_dir} CMAKE="cmake $${CL_OPTS}"
-  $(1)-clean:
-	$$(MAKE) -C $${$(1)_dir} clean
-  PHONIES        += $(1) $(1)-clean
-  ANALYZER_CLEAN += $${$(1)_dir}
-  ifeq (${ANALYZER},$(1))
-    LDFLAGS        += $$(call GETLDFLAGS,$${$(1)_path})
-  endif
-endef
-$(foreach analyzer,${ANALYZERS},$(eval $(call ANALYZER_template,${analyzer})))
-
 $(if ${DEP_FILES},$(eval include ${DEP_FILES}))
 
 ${OBJECTS} : %.o : %.c
 	$(CC) $(CFLAGS) $(OBJECTS_CFLAGS) -o $@ -c $<
 
-${PROGRAM} :: ${OBJECTS} ${SPARSE_LIB} ${ANALYZER}
+${PROGRAM} :: ${OBJECTS} ${SPARSE_LIB}
 	g++ $(CFLAGS) -o $@ ${OBJECTS} $(LDFLAGS)
 
 ${TEST_PROGRAMS} :: % : %.c
@@ -157,8 +131,6 @@ completion :: ${COMPLETION}
 ${COMPLETION} :: ${PROGRAM}
 	./${PROGRAM} --bash > $@
 
-analyzers: ${ANALYZERS}
-
 check :: $(PROGRAM)
 	make -C ${TEST_RUNNER_DIR}
 
@@ -168,13 +140,10 @@ clean : clean-check
 clean-sparse:
 	$(MAKE) -C $(SPARSE_DIR) clean
 
-clean-analyzers:
-	for a in $(ANALYZER_CLEAN); do $(MAKE) -C $$a clean; done
-
 clean-check:
 	make -C ${TEST_RUNNER_DIR} clean
 
-mrproper: clean clean-check clean-sparse clean-analyzers
+mrproper: clean clean-check clean-sparse
 
-.PHONY: all completion analyzers check clean ${PHONIES} \
-        clean-sparse clean-analyzers clean-check-prev clean-check mrproper
+.PHONY: all completion check clean ${PHONIES} \
+        clean-sparse clean-check-prev clean-check mrproper
