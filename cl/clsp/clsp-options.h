@@ -43,6 +43,7 @@ struct options {
         int             emit_props;
         const char      *basename;
         const char      *basename_free;
+        bool            preserve_ec;
     } internals;
     /* output streams */
     opts_outstreams     outstreams;

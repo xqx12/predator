@@ -58,8 +58,12 @@ const char *GIT_SHA1 = "someversion";
 
 /** Code Listener messaging: standard print */
 static void clmsg_print(const char *msg)     {PUT(cl, _1(s), msg);            }
-/** Code Listener messaging: highlighted print */
-static void clmsg_highlight(const char *msg) {PUT(cl, HIGHLIGHT(_1(s)), msg); }
+/** Code Listener messaging: error print */
+static void clmsg_error(const char *msg)
+{
+    ++globals.cnt_errors;
+    PUT(cl, HIGHLIGHT(_1(s)), msg);
+}
 /** Code Listener messaging: debug print */
 static void clmsg_debug(const char *msg)     {PUT(cl_debug, _1(s), msg);      }
 /** Code Listener messaging: print and exit */
@@ -386,7 +390,7 @@ setup_cl(const struct options *opts)
         struct cl_init_data init = {
             .debug       = clmsg_debug,
             .warn        = clmsg_print,
-            .error       = clmsg_highlight,
+            .error       = clmsg_error,
             .note        = clmsg_print,
             .die         = clmsg_die,
             .debug_level = OPTS_CL(debug.level),
@@ -417,6 +421,7 @@ emitter(struct options *opts)
     int ret, emit_props = OPTS_INTERNALS(emit_props);
     struct string_list *filelist = NULL;
     struct symbol_list *symlist;
+    const bool preserve_ec = opts->internals.preserve_ec;
 
     /* last thing on the way out: close streams incl. those setup below */
     if (GLOBALS(unexposed.register_atexit) && 0 != atexit(atexit_worker_late))
@@ -455,6 +460,9 @@ emitter(struct options *opts)
         - loc.file
      */
     release_sparse();
+
+    if (!preserve_ec && globals.cnt_errors)
+        return EXIT_FAILURE;
 
     return (ret_negative == ret) ? ec_sparse_code : ec_ok;
 }

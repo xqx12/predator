@@ -629,6 +629,10 @@ options_proceed_cl(struct options *opts, const char *args[])
         else
             CL(debug.level) = get_nonnegative_num("debug", value);
 
+    } else if (!strcmp(*args, "-preserve-ec")) {
+
+        opts->internals.preserve_ec = true;
+
     /* TODO: remove? */
     /*} else if ((value = PREFIXEQ(*args,CL,"cl-args"))) {
 

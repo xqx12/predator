@@ -255,7 +255,7 @@ endmacro(test_predator_regre)
 # FIXME: copy/pasted from above!
 macro(test_predator_regre_clsp)
     foreach (num ${clsp_tests})
-        set(cmd "LC_ALL=C ${GCC_EXEC_PREFIX} ${CLSP}")
+        set(cmd "LC_ALL=C ${GCC_EXEC_PREFIX} ${CLSP} -preserve-ec")
 
         # we use the following flag to avoid differences on 32bit vs 64bit archs
         # in the error output, which is checked for exact match
