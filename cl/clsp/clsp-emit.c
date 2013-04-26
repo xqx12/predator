@@ -1283,6 +1283,12 @@ op_from_symbol(struct symbol *sym)
 {
     struct cl_operand *op = NO_OPERAND_USE;
 
+    if (SYM_NODE == sym->type && NS_SYMBOL == sym->namespace
+            && SYM_FN == sym->ctype.base_type->type
+            && sym->ident && sym->definition)
+        /* jump to definition, so we will not end up with two distinct UIDs */
+        sym = sym->definition;
+
     /* try to lookup in cache */
     if (sym->pseudo && sym->pseudo->priv)
         /*
@@ -2823,8 +2829,10 @@ consider_file(const char *file, struct symbol_list *symlist, int emit_props,
                 if (!ep || is_private)
                     continue;
 
-                assert(!sym->aux);  /* not already used (may be wrong) */
-                sym->aux = fnc_op = op_from_symbol(sym);
+                fnc_op = sym->aux;
+                if (!fnc_op)
+                    fnc_op = op_from_symbol(sym);
+
                 WITH_FUNCTION_TO_EMIT(fnc_op, sym->endpos)
                     if (!emit_function_payload(ep, &emit_props))
                         return -1;  /* interactive quit looks like error (OK) */
