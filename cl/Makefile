@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Kamil Dudka <kdudka@redhat.com>
+# Copyright (C) 2010 - 2013 Kamil Dudka <kdudka@redhat.com>
 #
 # This file is part of predator.
 #
@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with predator.  If not, see <http://www.gnu.org/licenses/>.
 
-CMAKE           ?= cmake
-CTEST           ?= ctest
+CMAKE ?= cmake
+CTEST ?= ctest
 
-.PHONY: all check clean cppcheck distclean distcheck fast version_cl.h
+.PHONY: all check clean clsp cppcheck distclean distcheck fast version_cl.h
 
 all: version_cl.h
 	mkdir -p ../cl_build
@@ -27,6 +27,13 @@ all: version_cl.h
 
 fast:
 	$(MAKE) -sC ../cl_build
+
+clsp: clsp/libclsp.a
+	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
+
+clsp/libclsp.a:
+	$(MAKE) -C clsp
+
 
 check: all
 	cd ../cl_build && $(CTEST) --output-on-failure
@@ -53,5 +60,6 @@ distclean: clean
 	rm -rf ../cl_build
 
 distcheck: distclean
+	$(MAKE) clsp
 	$(MAKE) check CMAKE='cmake -D CL_DEBUG=ON'
 	$(MAKE) check CMAKE='cmake -D CL_DEBUG=OFF'

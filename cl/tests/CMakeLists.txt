@@ -18,13 +18,15 @@
 # tweak include dirs, etc.
 add_definitions("-I../../include -fPIC")
 
-# compile libchk_var_killer.so
-add_library(chk_var_killer SHARED chk_var_killer.cc)
-CL_LINK_GCC_PLUGIN(chk_var_killer "")
+# compile libchk_var_killer_core.a
+add_library(chk_var_killer_core STATIC chk_var_killer.cc)
+CL_BUILD_GCC_PLUGIN(chk_var_killer chk_var_killer_core "")
+CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED(chk_var_killer_clsp chk_var_killer_core "..")
 
-# compile libchk_pt.so
-add_library(chk_pt SHARED chk_pt.cc)
-CL_LINK_GCC_PLUGIN(chk_pt "")
+# compile libchk_pt_core.a
+add_library(chk_pt_core STATIC chk_pt.cc)
+CL_BUILD_GCC_PLUGIN(chk_pt chk_pt_core "")
+CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED(chk_pt_clsp chk_pt_core "..")
 
 # compile libcl_smoke_test.so
 add_library(cl_smoke_test SHARED cl_smoke_test.cc)
@@ -34,6 +36,11 @@ CL_LINK_GCC_PLUGIN(cl_smoke_test "")
 get_property(GCC_VK_PLUG TARGET chk_var_killer PROPERTY LOCATION)
 get_property(GCC_PT_PLUG TARGET chk_pt         PROPERTY LOCATION)
 set(GCC_PLUG "${GCC_VK_PLUG}")
+
+if(ENABLE_CLSP)
+    get_property(CLSP_CHK_VK TARGET chk_var_killer_clsp PROPERTY LOCATION)
+    get_property(CLSP_CHK_PT TARGET chk_pt_clsp         PROPERTY LOCATION)
+endif()
 
 message(STATUS "GCC_VK_PLUG: ${GCC_VK_PLUG}")
 message(STATUS "GCC_PT_PLUG: ${GCC_PT_PLUG}")
@@ -86,22 +93,29 @@ endif()
 
 # generic template for var-killer tests
 macro(add_vk_test id)
-    set(cmd "${GCC_HOST} -c ${cl_SOURCE_DIR}/tests/data/vk-${id}.c")
-    set(cmd "${cmd} -o /dev/null")
-    set(cmd "${cmd} -I${PRED_INCL_DIR}")
-    set(cmd "${cmd} -fplugin=${GCC_VK_PLUG}")
-    add_test_wrap("var-killer-${id}" "${cmd}")
+    set(args "${cl_SOURCE_DIR}/tests/data/vk-${id}.c -I${PRED_INCL_DIR}")
+
+    set(cmd_gcc "${GCC_HOST} -c -o /dev/null -fplugin=${GCC_VK_PLUG} ${args}")
+    add_test_wrap("var-killer-${id}-GCC" "${cmd_gcc}")
+
+    if(ENABLE_CLSP)
+        set(cmd_clsp "${CLSP_CHK_VK} ${args}")
+        add_test_wrap("var-killer-${id}-CLSP" "${cmd_clsp}")
+    endif()
 endmacro()
 
 macro(add_pt_test id)
-    set(cmd "${GCC_HOST} -c ${cl_SOURCE_DIR}/tests/data/pt-${id}.c")
-    set(cmd "${cmd} -o /dev/null")
-    set(cmd "${cmd} -I${cl_SOURCE_DIR}")
-    set(cmd "${cmd} -DNDEBUG")
-    set(cmd "${cmd} -I${PRED_INCL_DIR}")
-    set(cmd "${cmd} -fplugin=${GCC_PT_PLUG}")
+    set(args "${cl_SOURCE_DIR}/tests/data/pt-${id}.c -DNDEBUG")
+    set(args "${args} -I${PRED_INCL_DIR} -I${cl_SOURCE_DIR}")
 
-    add_test_wrap("points-to-${id}" "${cmd}")
+    set(cmd_gcc "${GCC_HOST} -c -o /dev/null -fplugin=${GCC_PT_PLUG} ${args}")
+    add_test_wrap("points-to-${id}-GCC" "${cmd_gcc}")
+
+    # FIXME: 12 points-to tests are still broken with CLSP
+    # if(ENABLE_CLSP)
+    #     set(cmd_clsp "${CLSP_CHK_PT} ${args}")
+    #     add_test_wrap("points-to-${id}-CLSP" "${cmd_clsp}")
+    # endif()
 endmacro()
 
 ####################################

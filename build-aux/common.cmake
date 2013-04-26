@@ -153,7 +153,7 @@ endif()
 macro(CL_BUILD_GCC_PLUGIN PLUGIN ANALYZER LIBCL_PATH)
     # build GCC plug-in named lib${PLUGIN}.so
     add_library(${PLUGIN} SHARED ${EMPTY_C_FILE})
-    CL_LINK_GCC_PLUGIN(${PLUGIN} ${LIBCL_PATH})
+    CL_LINK_GCC_PLUGIN(${PLUGIN} "${LIBCL_PATH}")
     target_link_libraries(${PLUGIN} ${ANALYZER})
 endmacro()
 
@@ -176,6 +176,6 @@ option(ENABLE_CLSP "Set to ON to build the CLSP front-end" OFF)
 macro(CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED CLSP_EXEC ANALYZER LIBCL_PATH)
     if(ENABLE_CLSP)
         # build CLSP executable
-        CL_BUILD_CLSP_EXECUTABLE(${CLSP_EXEC} ${ANALYZER} ${LIBCL_PATH})
+        CL_BUILD_CLSP_EXECUTABLE(${CLSP_EXEC} ${ANALYZER} "${LIBCL_PATH}")
     endif()
 endmacro()

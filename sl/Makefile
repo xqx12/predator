@@ -1,4 +1,4 @@
-# Copyright (C) 2009 Kamil Dudka <kdudka@redhat.com>
+# Copyright (C) 2009 - 2013 Kamil Dudka <kdudka@redhat.com>
 #
 # This file is part of predator.
 #
@@ -18,7 +18,7 @@
 CMAKE ?= cmake
 CTEST ?= ctest
 
-.PHONY: all check clean cppcheck distclean distcheck fast version.h
+.PHONY: all check clean clsp cppcheck distclean distcheck fast version.h
 
 all: version.h ../cl_build/Makefile
 	# make sure that libcl.a is up2date
@@ -33,10 +33,10 @@ all: version.h ../cl_build/Makefile
 fast:
 	$(MAKE) -sC ../sl_build
 
-clsp: ../cl/clsp/clsp
+clsp: ../cl/clsp/libclsp.a
 	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
 
-../cl/clsp/clsp:
+../cl/clsp/libclsp.a:
 	$(MAKE) -C ../cl/clsp
 
 check: all
