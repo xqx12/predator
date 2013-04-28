@@ -15,16 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with predator.  If not, see <http://www.gnu.org/licenses/>.
 
-CMAKE           ?= cmake
-CTEST           ?= ctest
+CMAKE ?= cmake
+CTEST ?= ctest
 
-.PHONY: all check clean cppcheck distclean distcheck version.h
+.PHONY: all check clean clsp cppcheck distclean distcheck version.h
 
 all: version.h
 	$(MAKE) -C ../cl_build # make sure that libcl.a is up2date
 	mkdir -p ../fwnull_build
 	cd ../fwnull_build && $(CMAKE) ../fwnull
 	$(MAKE) -C ../fwnull_build
+
+clsp: ../cl/clsp/libclsp.a
+	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
+
+../cl/clsp/libclsp.a:
+	$(MAKE) -C ../cl/clsp
 
 check: all
 	cd ../fwnull_build && $(CTEST) --output-on-failure
@@ -52,5 +58,6 @@ distclean: clean
 	rm -rf ../fwnull_build
 
 distcheck: distclean
+	$(MAKE) clsp
 	$(MAKE) check CMAKE='cmake -D FWNULL_DEBUG=ON'
 	$(MAKE) check CMAKE='cmake -D FWNULL_DEBUG=OFF'

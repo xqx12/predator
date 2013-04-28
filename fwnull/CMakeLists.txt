@@ -37,6 +37,9 @@ add_library(fwnull_core STATIC
 # build GCC plug-in (libfwnull.so)
 CL_BUILD_GCC_PLUGIN(fwnull fwnull_core ../cl_build)
 
+# optionally build CLSP executable (clsp-fwnull)
+CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED(clsp-fwnull fwnull_core ../cl_build)
+
 # make install
 install(TARGETS fwnull DESTINATION lib)
 
