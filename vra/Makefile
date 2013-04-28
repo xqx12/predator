@@ -17,7 +17,7 @@
 CMAKE           ?= cmake
 CTEST           ?= ctest
 
-.PHONY: all check check-unit check-overall clean cppcheck doc \
+.PHONY: all check check-unit check-overall clean clsp cppcheck doc \
 	distclean distcheck pack version.h
 
 all: version.h
@@ -33,6 +33,12 @@ check-unit:
 check-overall:
 	$(MAKE) -C tests-overall
 	cd tests-overall && ./tests-run.sh
+
+clsp: ../cl/clsp/libclsp.a
+	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
+
+../cl/clsp/libclsp.a:
+	$(MAKE) -C ../cl/clsp
 
 check: all
 	$(MAKE) check-unit check-overall
@@ -67,6 +73,7 @@ distclean: clean
 	rm -rf ../vra_build
 
 distcheck: distclean
+	$(MAKE) clsp
 	$(MAKE) check
 
 pack:

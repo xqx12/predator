@@ -60,7 +60,13 @@ if(NOT GMPXX_LIB)
   message(FATAL_ERROR "gmpxx library not found.")
 endif()
 
-target_link_libraries(vra ${CL_LIB} ${GMP_LIB} ${GMPXX_LIB})
+target_link_libraries(vra ${GMP_LIB} ${GMPXX_LIB})
+
+# optionally build CLSP executable (clsp-vra)
+if(ENABLE_CLSP)
+  CL_BUILD_CLSP_EXECUTABLE(clsp-vra vra_core ../cl_build)
+  target_link_libraries(clsp-vra ${GMP_LIB} ${GMPXX_LIB})
+endif()
 
 # make install
 install(TARGETS vra DESTINATION lib)
