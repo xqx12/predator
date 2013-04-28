@@ -85,6 +85,9 @@ add_library(forester STATIC
 CL_BUILD_GCC_PLUGIN(fa forester ../cl_build)
 target_link_libraries(fa rt)
 
+# optionally build CLSP executable (clsp-forester)
+CL_BUILD_CLSP_EXECUTABLE_IF_ENABLED(clsp-forester forester ../cl_build)
+
 # get the full path of libfa.so
 get_property(GCC_PLUG TARGET fa PROPERTY LOCATION)
 message (STATUS "GCC_PLUG: ${GCC_PLUG}")

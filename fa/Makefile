@@ -18,13 +18,19 @@
 CMAKE ?= cmake
 CTEST ?= ctest
 
-.PHONY: all check clean distclean distcheck version.h
+.PHONY: all check clean clsp distclean distcheck version.h
 
 all:
 	$(MAKE) -C ../cl_build # make sure that libcl.a is up2date
 	mkdir -p ../fa_build
 	cd ../fa_build && $(CMAKE) ../fa
 	$(MAKE) -C ../fa_build
+
+clsp: ../cl/clsp/libclsp.a
+	$(MAKE) CMAKE='cmake -D ENABLE_CLSP=ON'
+
+../cl/clsp/libclsp.a:
+	$(MAKE) -C ../cl/clsp
 
 check: all
 	cd ../fa_build && $(CTEST) --output-on-failure
@@ -47,4 +53,5 @@ distclean: clean
 	rm -rf ../fa_build
 
 distcheck: distclean
+	$(MAKE) clsp
 	$(MAKE) check
